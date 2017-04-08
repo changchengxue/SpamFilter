@@ -28,9 +28,10 @@ def main():
     # 转成 array 向量
     train_marked_words = np.array(train_marked_words)
     print("数据转成矩阵!\n")
-    p_words_spam, p_words_health, p_spam = util.trainingNaiveBayes(
+
+    spam_words_probability, health_words_probability, spam_probability = util.training_naive_bayes(
         train_marked_words, class_labels)
-    print("p_sam: ", p_spam)
+    print("垃圾邮件的概率: ", spam_probability)
 
     # 保存训练生成的语料库信息
     # 保存语料库词汇
@@ -38,9 +39,9 @@ def main():
     for i in range(len(vocabulary_list)):
         file_opne.write(vocabulary_list[i] + '\t')
 
-    # 保存 p_words_sam, p_words_health
-    np.savetxt('p_words_spam.txt', p_words_spam, delimiter='\t')
-    np.savetxt('p_words_health.txt', p_words_health, delimiter='\t')
+    # 保存 spam_wrods_probability, health_words_probability
+    np.savetxt('spam_words_probability.txt', spam_words_probability, delimiter='\t')
+    np.savetxt('health_words_probability.txt', health_words_probability, delimiter='\t')
 
 
 if __name__ == '__main__':

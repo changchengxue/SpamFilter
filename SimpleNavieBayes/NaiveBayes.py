@@ -71,7 +71,7 @@ def training_naive_bayes(train_marked_words, train_category):
     num_train_doc = len(train_marked_words)
     num_words = len(train_marked_words[0])
     # 是垃圾邮件的先验概率P(S)
-    p_spam = sum(train_category) / float(num_train_doc)
+    spam_probability = sum(train_category) / float(num_train_doc)
     # 统计语料库中词汇在S和H 中出现的次数
     words_in_spam_num = np.zeros((1, num_words))
     words_in_health_num = np.zeros((1, num_words))
@@ -91,4 +91,4 @@ def training_naive_bayes(train_marked_words, train_category):
     p_words_spam = words_in_spam_num / spam_words_num
     p_words_health = words_in_health_num / health_words_num
 
-    return p_words_spam, p_words_health, p_spam
+    return p_words_spam, p_words_health, spam_probability
