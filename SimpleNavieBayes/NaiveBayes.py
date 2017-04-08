@@ -1,5 +1,8 @@
 #!/usr/bin/python3.6
 # -*- coding: utf-8 -*-
+"""
+@Author: changcheng
+"""
 
 import re
 import numpy as np
@@ -92,3 +95,16 @@ def training_naive_bayes(train_marked_words, train_category):
     p_words_health = words_in_health_num / health_words_num
 
     return p_words_spam, p_words_health, spam_probability
+
+
+def bayes_theorem_cal_prob(spam_words_probability, health_words_probability, spam_probability):
+    """
+    利用Bayes 定理计算P(S|Wi)
+    即词汇Wi 出现，是垃圾邮件的条件概率
+                    P(Wi|S)P(S)
+    P(S|Wi) = -----------------------------
+                P(Wi|S)P(S) + P(Wi|H)P(H)
+    """
+    temp = spam_words_probability  * spam_probability
+    wi_probability = temp / (temp + health_words_probability * (1 - spam_probability))
+    return wi_probability

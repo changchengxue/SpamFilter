@@ -3,4 +3,5 @@
 """
 @Author: changcheng
 """
+
 from . import SimpleNavieBayes
