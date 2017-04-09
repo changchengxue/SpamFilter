@@ -1,25 +1,22 @@
 #!/usr/bin/python3.6
-# _*_coding: utf-8 _*_
-
+# -*- coding: utf-8 -*-
 """
 @Author: changcheng
 """
-
-import re
 import numpy as np
 
 
 def text_parser(text):
     """
-    对SMS进行预处理
-    去掉空字符
-    :param text: 输入的字符串
-    :return words: 统一小写的List
+    对SMS 进行预处理
+    去掉字符串
+    并统一小写
+    :param text:
+    :return:
     """
-    # 匹配非字母或数字，即为只留下单词
+    import re
     reg = re.compile(r'[^a-zA-Z]|\d')
     words = reg.split(text)
-    # 去掉字符串，并统一小写
     words = [word.lower() for word in words if len(word) > 0]
     return words
 
@@ -27,13 +24,12 @@ def text_parser(text):
 def load_sms_data(file_name):
     """
     加载sms 数据
-    class_category: 类别标签， 1 表示是垃圾信息 0 表示是正常信息
-    :param file_name: 加载的文件名
-    :returns sms_words, class_category:
+    :param file_name:
+    :return:
     """
     file = open(file_name)
-
     class_category = []
+    # 类别标签，1表示是垃圾SMS，0表示正常SMS
     sms_words = []
     for line in file.readlines():
         line_data = line.strip().split('\t')
@@ -41,7 +37,7 @@ def load_sms_data(file_name):
             class_category.append(0)
         elif line_data[0] == 'spam':
             class_category.append(1)
-        # Slice text
+        # 切分文本
         words = text_parser(line_data[1])
         sms_words.append(words)
     return sms_words, class_category
@@ -66,9 +62,9 @@ def get_vocabulary_list(file_name):
     :param file_name:
     :return:
     """
-    file = open(file_name)
-    vocabulary_list = file.readline().strip().split('\t')
-    file.close()
+    file_read = open(file_name)
+    vocabulary_list = file_read.readline().strip().split('\t')
+    file_read.close()
     return vocabulary_list
 
 
@@ -84,7 +80,7 @@ def set_of_words_to_vector(vocabulary_list, sms_words):
     for sms_word in sms_words:
         if sms_word in vocabulary_list:
             vocabulary_marked[vocabulary_list.index(sms_word)] += 1
-    return vocabulary_marked
+    return np.array(vocabulary_marked)
 
 
 def set_of_words_list_to_vector(vocabulary_list, sms_words_list):
@@ -103,30 +99,31 @@ def set_of_words_list_to_vector(vocabulary_list, sms_words_list):
 
 def training_naive_bayes(train_marked_words, train_category):
     """
-    训练数据集中获取语料库中词汇的垃圾信息的概率: P(Wi | S)
-    prob_spam: 是垃圾邮件的先验概率P(S)
-    :param train_marked_words: 按照语料库标记的数据。二维数组
+    训练数据集中获取语料库中词汇的spam P(Wi|S)
+    :param train_marked_words:
     :param train_category:
     :return:
     """
     num_train_doc = len(train_marked_words)
     num_words = len(train_marked_words[0])
     prob_spam = sum(train_category) / float(num_train_doc)
-    word_in_spm_num = np.ones(num_words)
-    word_in_health_num = np.ones(num_words)
+
+    words_in_spam_num = np.ones(num_words)
+    words_in_health_num = np.ones(num_words)
+
     spam_words_num = 2.0
     health_words_num = 2.0
+
     for i in range(0, num_train_doc):
         if train_category[i] == 1:
-            # 如果是垃圾信息
-            word_in_spm_num += train_marked_words[i]
-            # 统计Spam 中语料库中词汇出现的总次数
+            words_in_spam_num += train_marked_words[i]
             spam_words_num += sum(train_marked_words[i])
         else:
-            word_in_health_num += train_marked_words[i]
+            words_in_health_num += train_marked_words[i]
             health_words_num += sum(train_marked_words[i])
-    prob_words_spam = np.log(word_in_spm_num / spam_words_num)
-    prob_words_health = np.log(word_in_health_num / health_words_num)
+
+    prob_words_spam = np.log(words_in_spam_num / spam_words_num)
+    prob_words_health = np.log(words_in_health_num / health_words_num)
 
     return prob_words_spam, prob_words_health, prob_spam
 
@@ -140,29 +137,29 @@ def get_trained_model_info():
     vocabulary_list = get_vocabulary_list('vocabulary_list.txt')
     prob_words_health = np.loadtxt('prob_words_health.txt', delimiter='\t')
     prob_words_spam = np.loadtxt('prob_words_spam.txt', delimiter='\t')
-    file = open('prop_spam.txt')
+    file = open('prob_spam.txt')
     prob_spam = float(file.readline().strip())
     file.close()
 
     return vocabulary_list, prob_words_spam, prob_words_health, prob_spam
 
 
-def classify(vocabulary_list, prob_words_spam, prob_words_health, prob_spam, test_words):
+def classify(prob_words_spam, prob_words_health, DS, prob_spam, test_words_marked_arr):
     """
-    计算联合概率并进行分类
-    :param vocabulary_list:
+    计算联合概率进行分类
     :param prob_words_spam:
     :param prob_words_health:
+    :param DS: Adaboost 算法额外增加的权重系数
     :param prob_spam:
-    :param test_words:
+    :param test_words_marked_arr:
     :return:
     """
-    test_words_count = set_of_words_to_vector(vocabulary_list, test_words)
-    test_words_marked_arr = np.array(test_words_count)
-    # 计算 P(Ci|W) W 为向量
-    # P(Ci|W) 只需计算P(W|Ci)P(Ci)
-    p1 = sum(test_words_marked_arr * prob_words_spam) + np.log(prob_spam)
-    p0 = sum(test_words_marked_arr * prob_words_health) + np.log(1 - prob_spam)
-    if p1 > p0:
-        return 1
-    return 0
+    # 计算P(Ci|W)
+    # W 为向量
+    # P(Ci|W) 只需计算P(W|Ci) P(Ci)
+    ps = sum(test_words_marked_arr * prob_words_spam * DS) + np.log(prob_spam)
+    ph = sum(test_words_marked_arr * prob_words_health) + np.log(1-prob_spam)
+    if ps > ph:
+        return ps, ph, 1
+    else:
+        return ps, ph, 0
